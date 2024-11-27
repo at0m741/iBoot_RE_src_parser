@@ -5,9 +5,11 @@ import dash_cytoscape as cyto
 from dash import html
 
 class FunctionCallGraph:
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, output_file="functions.txt"):
         self.root_dir = root_dir
         self.graph = {}
+        self.function_definitions = set()
+        self.output_file = output_file
 
     def extract_function_calls(self, file_path):
         try:
@@ -19,16 +21,41 @@ class FunctionCallGraph:
 
         functions = re.findall(r'^\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\)\s*{', content, re.MULTILINE)
         functions = [f.split('(')[0].strip() for f in functions]
-        
+
         calls = re.findall(r'\b(?!if|else|for|while|switch|return|ASSERT|__attribute__\b)[a-zA-Z_][a-zA-Z0-9_]*\s*\(', content)
         calls = [c.split('(')[0].strip() for c in calls if c.split('(')[0].strip() not in functions]
-        
+
+        full_definitions = self.extract_function_definitions(content)
+        self.function_definitions.update(full_definitions)
+
         call_map = {func: [] for func in functions}
         for func in functions:
             for call in calls:
                 if call != func:
                     call_map[func].append(call)
         return call_map
+
+    def extract_function_definitions(self, content):
+        pattern = r'^\s*[a-zA-Z_][a-zA-Z0-9_\*]*\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\)\s*{'
+
+        matches = re.finditer(pattern, content, re.MULTILINE)
+
+        definitions = []
+        for match in matches:
+            start = match.start()
+            open_braces = 0
+            end = start
+            for i, char in enumerate(content[start:], start=start):
+                if char == '{':
+                    open_braces += 1
+                elif char == '}':
+                    open_braces -= 1
+                if open_braces == 0 and char == '}':
+                    end = i + 1
+                    break
+            function_code = content[start:end].strip()
+            definitions.append(function_code)
+        return definitions
 
     def build_graph(self):
         for root, _, files in os.walk(self.root_dir):
@@ -70,17 +97,30 @@ class FunctionCallGraph:
                 elements.append({"data": {"source": func, "target": call}})
         return elements
 
+    def save_function_definitions(self):
+        try:
+            with open(self.output_file, "w") as file:
+                for definition in sorted(self.function_definitions):
+                    file.write(definition + "\n\n")
+            print(f"Function definitions written to {self.output_file}")
+        except Exception as e:
+            print(f"Error writing to {self.output_file}: {e}")
+
     def print_graph(self):
         for func, calls in self.graph.items():
             for call in calls:
                 print(f"F: {func} -----> C: {call}") 
 
-root_dir = "./iBoot"
 
-graph = FunctionCallGraph(root_dir)
+root_dir = "./iBoot"
+output_file = "functions.txt"
+
+graph = FunctionCallGraph(root_dir, output_file)
 graph.build_graph()
 
 graph.print_graph()
+
+graph.save_function_definitions()
 
 subgraph = graph.traverse_from_main("_main")
 elements = graph.to_cytoscape_elements(subgraph)
