@@ -1,0 +1,69 @@
+body, html {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	font-family: Arial, sans-serif;
+}
+
+svg {
+	width: 80%;
+	height: 100%;
+	background-color: #f4f4f9;
+	float: left;
+}
+
+h1 {
+	margin: 0;
+	padding: 10px;
+	background-color: #f4f4f9;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+#loader{
+	position: absolute;
+	height:100vh;
+	width:100%;
+	background: white;
+}
+
+#sidebar {
+	border-bottom: 1px solid #e0e0e0;
+	background-color: #ffffff;
+	overflow-y: auto;
+	padding: 10px;
+}
+#sidebar ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+#sidebar li {
+	cursor: pointer;
+	padding: 5px 10px;
+	border-radius: 5px;
+	margin: 2px 0;
+}
+#sidebar li:hover {
+	background-color: #f0f0f0;
+}
+.link {
+	stroke: #999;
+	stroke-opacity: 0.6;
+	transition: stroke 0.3s, stroke-opacity 0.3s;
+}
+.link.highlight {
+	stroke: red;
+	stroke-opacity: 1.0;
+	transition: stroke 0.3s, stroke-opacity 0.3s;
+}
+.node circle {
+	stroke: #fff;
+	stroke-width: 1.5px;
+	transition: stroke 0.3s, stroke-width 0.3s;
+}
+.node text {
+	font-size: 12px;
+	pointer-events: none;
+}
