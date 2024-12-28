@@ -158,172 +158,252 @@ d3.json("functions.json").then(data => {
 	}
 
    
-	function showFunctionCalls(functionName, calls) {
-		let modalContainer = document.getElementById("modalContainer");
+function showFunctionCalls(functionName, functionData) {
+    let modalContainer = document.getElementById("modalContainer");
 
-		if (!modalContainer) {
-			modalContainer = document.createElement("div");
-			modalContainer.id = "modalContainer";
-			modalContainer.style.position = "fixed";
-			modalContainer.style.left = "0";
-			modalContainer.style.top = "0";
-			modalContainer.style.width = "100%";
-			modalContainer.style.height = "100%";
-			modalContainer.style.background = "rgba(0, 0, 0, 0.5)";
-			modalContainer.style.zIndex = "1000";
-			modalContainer.style.display = "flex";
-			modalContainer.style.alignItems = "center";
-			modalContainer.style.justifyContent = "center";
+    if (!modalContainer) {
+        modalContainer = document.createElement("div");
+        modalContainer.id = "modalContainer";
+        modalContainer.style.position = "fixed";
+        modalContainer.style.left = "0";
+        modalContainer.style.top = "0";
+        modalContainer.style.width = "100%";
+        modalContainer.style.height = "100%";
+        modalContainer.style.background = "rgba(0, 0, 0, 0.5)";
+        modalContainer.style.zIndex = "1000";
+        modalContainer.style.display = "flex";
+        modalContainer.style.alignItems = "center";
+        modalContainer.style.justifyContent = "center";
 
-			const modal = document.createElement("div");
-			modal.id = "functionModal";
-			modal.style.position = "relative";
-			modal.style.width = "400px";
-			modal.style.height = "300px";
-			modal.style.background = "white";
-			modal.style.border = "1px solid black";
-			modal.style.borderRadius = "8px";
-			modal.style.padding = "20px";
-			modal.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.1)";
-			modal.style.overflowY = "auto";
+        const modal = document.createElement("div");
+        modal.id = "functionModal";
+        modal.style.position = "relative";
+        modal.style.width = "600px";
+        modal.style.maxHeight = "80vh";
+        modal.style.background = "white";
+        modal.style.border = "1px solid black";
+        modal.style.borderRadius = "8px";
+        modal.style.padding = "20px";
+        modal.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.1)";
+        modal.style.overflowY = "auto";
 
-			const title = document.createElement("h2");
-			title.style.marginTop = "10px";
-			modal.appendChild(title);
+        const closeButton = document.createElement("button");
+        closeButton.textContent = "Close";
+        closeButton.style.position = "absolute";
+        closeButton.style.top = "10px";
+        closeButton.style.right = "10px";
+        closeButton.style.padding = "5px 10px";
+        closeButton.style.background = "#f44336";
+        closeButton.style.color = "white";
+        closeButton.style.border = "none";
+        closeButton.style.borderRadius = "5px";
+        closeButton.style.cursor = "pointer";
+        closeButton.addEventListener("click", () => {
+            modalContainer.style.display = "none";
+        });
 
-			const list = document.createElement("ul");
-			list.id = "callList";
-			modal.appendChild(list);
+        modal.appendChild(closeButton);
+        modalContainer.appendChild(modal);
+        document.body.appendChild(modalContainer);
 
-			modalContainer.appendChild(modal);
-			document.body.appendChild(modalContainer);
+        modalContainer.addEventListener("click", (event) => {
+            if (event.target === modalContainer) {
+                modalContainer.style.display = "none";
+            }
+        });
+    }
 
-			modalContainer.addEventListener("click", (event) => {
-				if (event.target === modalContainer) {
-					modalContainer.style.display = "none";
-				}
-			});
+    const modal = modalContainer.querySelector("#functionModal");
+
+    modal.innerHTML = `
+      <button
+        style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer;"
+        onclick="document.getElementById('modalContainer').style.display = 'none';">
+          Close
+      </button>
+    `;
+    modal.innerHTML += `<h2>Function: ${functionName}</h2>`;
+
+    if (functionData.documentation) {
+        const doc = functionData.documentation;
+        function extractSection(docString, sectionName) {
+            const regex = new RegExp(
+                `(?:#{1,4}\\s*|\\*\\*)\\s*${sectionName}(?:\\*{2}|\\s*:)?.*?\\n+([\\s\\S]*?)(?=\\n+\\s*(?:#{1,4}\\s*|\\*\\*)\\s*(?:Description|Parameters|Return Value|Pseudocode)|$)`,
+                "i"
+            );
+            const match = docString.match(regex);
+            if (match) {
+                return match[1].trim();
+            }
+            return ""; 
+        }
+
+        let description = extractSection(doc, "Description");
+        if (!description) {
+            description = "No description available.";
+        }
+
+        let parameters = extractSection(doc, "Parameters");
+        if (!parameters) {
+            parameters = "No parameters listed.";
+        } else {
+            const lines = parameters
+                .split("\n")
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+            parameters = "<ul>" + lines.map(l => `<li>${l}</li>`).join("") + "</ul>";
+        }
+
+        let returnValue = extractSection(doc, "Return Value");
+        if (!returnValue) {
+            returnValue = "No return value specified.";
+        }
+
+        let pseudocode = extractSection(doc, "Pseudocode");
+        if (!pseudocode) {
+            pseudocode = "No pseudocode available.";
+        }
+        const codeBlockMatch = pseudocode.match(/```([\s\S]*?)```/);
+        if (codeBlockMatch) {
+            pseudocode = `<pre><code>${codeBlockMatch[1].trim()}</code></pre>`;
+        } else {
+            pseudocode = `<pre><code>${pseudocode}</code></pre>`;
+        }
+
+        modal.innerHTML += `
+            <h3>Description</h3>
+            <p>${description}</p>
+            
+            <h3>Parameters</h3>
+            ${parameters}
+            
+            <h3>Return Value</h3>
+            <p>${returnValue}</p>
+            
+            <h3>Pseudocode</h3>
+            ${pseudocode}
+        `;
+    } else {
+        modal.innerHTML += "<p>No documentation available.</p>";
+    }
+
+    const uniqueCalls = [...new Set(functionData.calls || [])];
+    if (uniqueCalls.length > 0) {
+        modal.innerHTML += `<h3>Calls</h3><ul>`;
+        uniqueCalls.forEach(call => {
+            modal.innerHTML += `<li>${call}</li>`;
+        });
+        modal.innerHTML += `</ul>`;
+    } else {
+        modal.innerHTML += `<h3>Calls</h3><p>No calls found.</p>`;
+    }
+
+    modalContainer.style.display = "flex";
+}
+
+
+function bringToFront(selection) {
+	selection.each(function () {
+		this.parentNode.appendChild(this);
+	});
+}
+
+function highlightConnections(nodeId) {
+	const linksToHighlight = d3.selectAll(".link")
+		.classed("highlight", d => d.source.id === nodeId || d.target.id === nodeId);
+
+	bringToFront(linksToHighlight.filter(".highlight"));
+
+	const nodeToHighlight = d3.selectAll(`circle[id='${nodeId}']`);
+	bringToFront(nodeToHighlight);
+}
+
+function resetHighlights() {
+	d3.selectAll(".link").classed("highlight", false);
+}
+
+const graphData = parseData(data);
+
+const svg = d3.select("svg")
+	.call(d3.zoom().on("zoom", (event) => {
+		svgGroup.attr("transform", event.transform);
+	}));
+const svgGroup = svg.append("g");
+
+const initialTransform = d3.zoomIdentity.translate(width / 2, height / 2).scale(0.06);
+svg.call(d3.zoom().transform, initialTransform);
+
+const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+const simulation = d3.forceSimulation(graphData.nodes)
+	.force("link", d3.forceLink(graphData.links).id(d => d.id).distance(150))
+	.force("charge", d3.forceManyBody().strength(-300))
+	.force("center", d3.forceCenter(width / 2, height / 2))
+	.force("collide", d3.forceCollide(40));
+
+const link = svgGroup.append("g")
+	.attr("class", "links")
+	.selectAll("line")
+	.data(graphData.links)
+	.enter().append("line")
+	.attr("class", "link")
+	.attr("stroke-width", 1.0);
+
+const node = svgGroup.append("g")
+	.attr("class", "nodes")
+	.selectAll("g")
+	.data(graphData.nodes)
+	.enter().append("g");
+
+
+node.append("circle")
+	.attr("r", d => (d.type === "folder" ? 20 : 10))
+	.attr("fill", d => (d.type === "folder" ? "#69b3a2" : color(d.group || d.id)))
+	.attr("id", d => d.id)
+	.on("mouseover", (event, d) => highlightConnections(d.id))
+	.on("mouseout", resetHighlights)
+	.on("click", (event, d) => {
+		centerGraph(d.id);
+		if (d.type === "function") {
+			showFunctionCalls(d.name, data[d.group]?.[d.name] || []);
 		}
-
-		const modal = modalContainer.querySelector("#functionModal");
-		modal.querySelector("h2").textContent = `Function: ${functionName}`;
-		const callList = modal.querySelector("#callList");
-		callList.innerHTML = "";
-
-		if (calls.length > 0) {
-			calls.forEach(call => {
-				const li = document.createElement("li");
-				li.textContent = call;
-				callList.appendChild(li);
-			});
-		} else {
-			const li = document.createElement("li");
-			li.textContent = "No calls";
+		else {
 			return
 		}
-
-		modalContainer.style.display = "flex";
-	}
-
-	function bringToFront(selection) {
-		selection.each(function () {
-			this.parentNode.appendChild(this);
-		});
-	}
-
-	function highlightConnections(nodeId) {
-		const linksToHighlight = d3.selectAll(".link")
-			.classed("highlight", d => d.source.id === nodeId || d.target.id === nodeId);
-
-		bringToFront(linksToHighlight.filter(".highlight"));
-
-		const nodeToHighlight = d3.selectAll(`circle[id='${nodeId}']`);
-		bringToFront(nodeToHighlight);
-	}
-
-	function resetHighlights() {
-		d3.selectAll(".link").classed("highlight", false);
-	}
-
-	const graphData = parseData(data);
-
-	const svg = d3.select("svg")
-		.call(d3.zoom().on("zoom", (event) => {
-			svgGroup.attr("transform", event.transform);
-		}));
-	const svgGroup = svg.append("g");
-
-	const initialTransform = d3.zoomIdentity.translate(width / 2, height / 2).scale(0.06);
-	svg.call(d3.zoom().transform, initialTransform);
-
-	const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-	const simulation = d3.forceSimulation(graphData.nodes)
-		.force("link", d3.forceLink(graphData.links).id(d => d.id).distance(150))
-		.force("charge", d3.forceManyBody().strength(-300))
-		.force("center", d3.forceCenter(width / 2, height / 2))
-		.force("collide", d3.forceCollide(40));
-
-	const link = svgGroup.append("g")
-		.attr("class", "links")
-		.selectAll("line")
-		.data(graphData.links)
-		.enter().append("line")
-		.attr("class", "link")
-		.attr("stroke-width", 1.0);
-
-	const node = svgGroup.append("g")
-		.attr("class", "nodes")
-		.selectAll("g")
-		.data(graphData.nodes)
-		.enter().append("g");
-
-	
-	node.append("circle")
-		.attr("r", d => (d.type === "folder" ? 20 : 10))
-		.attr("fill", d => (d.type === "folder" ? "#69b3a2" : color(d.group || d.id)))
-		.attr("id", d => d.id)
-		.on("mouseover", (event, d) => highlightConnections(d.id))
-		.on("mouseout", resetHighlights)
-		.on("click", (event, d) => {
-			centerGraph(d.id);
-			if (d.type === "function") {
-				showFunctionCalls(d.name, data[d.group]?.[d.name] || []);
-			}
-		});
-
-
-	node.append("text")
-		.text(d => d.name)
-		.attr("x", 15)
-		.attr("y", 5);
-
-	simulation.on("tick", () => {
-		link
-			.attr("x1", d => d.source.x)
-			.attr("y1", d => d.source.y)
-			.attr("x2", d => d.target.x)
-			.attr("y2", d => d.target.y);
-
-		node.attr("transform", d => `translate(${d.x}, ${d.y})`);
 	});
 
-	buildMenu(data);
 
-	setTimeout(() => {
-		simulation.stop();
+node.append("text")
+	.text(d => d.name)
+	.attr("x", 15)
+	.attr("y", 5);
 
-		document.querySelector("#loader").style.display = "none";
+simulation.on("tick", () => {
+	link
+		.attr("x1", d => d.source.x)
+		.attr("y1", d => d.source.y)
+		.attr("x2", d => d.target.x)
+		.attr("y2", d => d.target.y);
 
-		document.querySelector("#loader").style.display = "none";
-	}, 3000);
+	node.attr("transform", d => `translate(${d.x}, ${d.y})`);
+});
 
-	window.addEventListener("resize", () => {
-		const newWidth = window.innerWidth * 0.8;
-		const newHeight = window.innerHeight;
-		svg.attr("width", newWidth).attr("height", newHeight);
-		simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
-	});
+buildMenu(data);
+
+setTimeout(() => {
+	simulation.stop();
+
+	document.querySelector("#loader").style.display = "none";
+
+	document.querySelector("#loader").style.display = "none";
+}, 3000);
+
+window.addEventListener("resize", () => {
+	const newWidth = window.innerWidth * 0.8;
+	const newHeight = window.innerHeight;
+	svg.attr("width", newWidth).attr("height", newHeight);
+	simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2));
+});
 }).catch(error => {
 	console.error("Error loading JSON:", error);
 });
