@@ -7,54 +7,39 @@ d3.json("functions.json").then(data => {
     const width = window.innerWidth * 0.8;
     const height = window.innerHeight;
 
-    function parseData(json) {
-        const nodes = [];
-        const links = [];
-        const nodeMap = new Map();
+    
+function parseData(json) {
+    console.log("Parsing JSON:", json);
+    const nodes = [];
+    const links = [];
+    const nodeMap = new Map();
 
-        for (const [folder, functions] of Object.entries(json)) {
-            const folderHierarchy = folder.split('/');
-            let parentId = null;
+    for (const [folder, functions] of Object.entries(json)) {
+        const folderHierarchy = folder.split('/');
+        let parentId = null;
 
-            folderHierarchy.forEach((name, index) => {
-                const folderId = folderHierarchy.slice(0, index + 1).join('/');
-
-                if (!nodeMap.has(folderId)) {
-                    nodes.push({
-                        id: folderId,
-                        name: name,
-                        type: "folder",
-                        level: index
-                    });
-                    nodeMap.set(folderId, true);
-                }
-
-                if (parentId) {
-                    links.push({ source: parentId, target: folderId });
-                }
-                parentId = folderId;
-            });
-
-            for (const [func, calls] of Object.entries(functions)) {
-                const funcId = `${folder}/${func}`;
-                if (!nodeMap.has(funcId)) {
-                    nodes.push({
-                        id: funcId,
-                        name: func,
-                        type: "function",
-                        group: folder,
-                        level: folderHierarchy.length,
-						callList: calls
-                    });
-                    nodeMap.set(funcId, true);
-                }
-
-                links.push({ source: parentId, target: funcId });
+        folderHierarchy.forEach((name, index) => {
+            const folderId = folderHierarchy.slice(0, index + 1).join('/');
+            if (!nodeMap.has(folderId)) {
+                nodes.push({ id: folderId, name, type: "folder", level: index });
+                nodeMap.set(folderId, true);
             }
-        }
+            if (parentId) links.push({ source: parentId, target: folderId });
+            parentId = folderId;
+        });
 
-        return { nodes, links };
+        for (const [func, calls] of Object.entries(functions)) {
+            const funcId = `${folder}/${func}`;
+            if (!nodeMap.has(funcId)) {
+                nodes.push({ id: funcId, name: func, type: "function", group: folder, level: folderHierarchy.length, callList: calls });
+                nodeMap.set(funcId, true);
+            }
+            links.push({ source: parentId, target: funcId });
+        }
     }
+
+    return { nodes, links };
+}
 
     function getRootFolders(json) {
         const roots = new Set();
