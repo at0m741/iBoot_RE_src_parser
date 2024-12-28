@@ -4,7 +4,6 @@ d3.json("functions.json").then(data => {
         alert("The JSON file is empty or invalid. Check the contents of functions.json.");
         return;
     }
-
     const width = window.innerWidth * 0.8;
     const height = window.innerHeight;
 
@@ -38,14 +37,14 @@ d3.json("functions.json").then(data => {
 
             for (const [func, calls] of Object.entries(functions)) {
                 const funcId = `${folder}/${func}`;
-
                 if (!nodeMap.has(funcId)) {
                     nodes.push({
                         id: funcId,
                         name: func,
                         type: "function",
                         group: folder,
-                        level: folderHierarchy.length
+                        level: folderHierarchy.length,
+						callList: calls
                     });
                     nodeMap.set(funcId, true);
                 }
@@ -150,7 +149,7 @@ d3.json("functions.json").then(data => {
 					`translate(${width / 2 - node.x}, ${height / 2 - node.y})`
 				);
 
-			const calls = graphData.nodes.find(n => n.id === nodeId && n.type === "function")?.calls || [];
+			const calls = graphData.nodes.find(n => n.id === nodeId && n.type === "function")?.callList;
 			if (calls) {
 				showFunctionCalls(node.name, calls);
 			}
@@ -323,7 +322,6 @@ function resetHighlights() {
 }
 
 const graphData = parseData(data);
-
 const svg = d3.select("svg")
 	.call(d3.zoom().on("zoom", (event) => {
 		svgGroup.attr("transform", event.transform);
@@ -357,21 +355,22 @@ const node = svgGroup.append("g")
 
 
 node.append("circle")
-	.attr("r", d => (d.type === "folder" ? 20 : 10))
-	.attr("fill", d => (d.type === "folder" ? "#69b3a2" : color(d.group || d.id)))
-	.attr("id", d => d.id)
-	.on("mouseover", (event, d) => highlightConnections(d.id))
-	.on("mouseout", resetHighlights)
-	.on("click", (event, d) => {
-		centerGraph(d.id);
-		if (d.type === "function") {
-			showFunctionCalls(d.name, data[d.group]?.[d.name] || []);
+    .attr("r", d => (d.type === "folder" ? 20 : 10))
+    .attr("fill", d => (d.type === "folder" ? "#69b3a2" : color(d.group || d.id)))
+    .attr("id", d => d.id)
+    .style("cursor", d => (d.type === "function" ? "pointer" : "default")) 
+    .on("mouseover", (event, d) => highlightConnections(d.id))
+    .on("mouseout", resetHighlights)
+    .on("click", (event, d) => {
+		console.log(d.id, d.type);
+        centerGraph(d.id);
+		if (d.type === "folder") {
+			console.warn("ici", d.type);
 		}
-		else {
-			return
-		}
-	});
-
+		else if (d.type === "function") {
+		            showFunctionCalls(d.name, data[d.group]?.[d.name] || []);
+		        }
+    });
 
 node.append("text")
 	.text(d => d.name)
